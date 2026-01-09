@@ -11,12 +11,10 @@
 
   <h1>Panel Admin 👑</h1>
 
-  <!-- Section demandes -->
   <div class="form-container">
     <h2>Demandes en attente</h2>
     <div id="list">
-      <!-- Les demandes apparaissent ici -->
-    </div>
+      </div>
 
     <button onclick="download()">Télécharger l'historique</button>
   </div>
@@ -24,8 +22,15 @@
 </div>
 
 <script>
+// On récupère le mot de passe directement dans l'URL (le ?pw=10009)
+const urlParams = new URLSearchParams(window.location.search);
+const adminPw = urlParams.get('pw');
+
 function refresh() {
-  fetch("/admin/demandes")
+  if(!adminPw) return;
+
+  // On ajoute le mot de passe à la requête fetch
+  fetch(`/admin/demandes?pw=${adminPw}`)
     .then(r => r.json())
     .then(data => {
       const list = document.getElementById("list");
@@ -42,7 +47,8 @@ function refresh() {
 }
 
 function valider(pseudo) {
-  fetch("/admin/valider", {
+  // On ajoute aussi le mot de passe ici pour avoir l'autorisation de valider
+  fetch(`/admin/valider?pw=${adminPw}`, {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({pseudo})
@@ -50,7 +56,8 @@ function valider(pseudo) {
 }
 
 function download() {
-  window.location = "/download";
+  // Le téléchargement doit aussi être autorisé
+  window.location = `/download?pw=${adminPw}`;
 }
 
 // Rafraîchissement automatique toutes les 2 secondes
