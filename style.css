@@ -1,0 +1,102 @@
+/* Général */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.container {
+  width: 90%;
+  max-width: 600px;
+  margin: 20px;
+  padding: 20px;
+  background-color: #ffffffcc;
+  border-radius: 15px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+/* Titres */
+h1 {
+  text-align: center;
+  color: #4a90e2;
+}
+
+h2 {
+  color: #4a90e2;
+  margin-bottom: 10px;
+}
+
+/* Formulaire */
+input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  margin: 5px 0;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+button {
+  background-color: #4a90e2;
+  color: white;
+  padding: 10px 20px;
+  margin-top: 10px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: 0.3s;
+}
+
+button:hover {
+  background-color: #357ab8;
+}
+
+/* Checkbox */
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  margin: 5px 0;
+}
+
+/* Chat */
+.chat-container {
+  margin-top: 20px;
+}
+
+#chat {
+  border: 2px solid #4a90e2;
+  height: 300px;
+  overflow-y: scroll;
+  padding: 10px;
+  border-radius: 10px;
+  background-color: #f0f8ff;
+  list-style: none;
+}
+
+li {
+  padding: 6px;
+  margin: 4px 0;
+  border-radius: 8px;
+}
+
+li:nth-child(odd) {
+  background-color: #d0eaff;
+}
+
+li:nth-child(even) {
+  background-color: #ffffffcc;
+}
+
+/* Input message */
+.message-input {
+  display: flex;
+  margin-top: 10px;
+}
+
+.message-input input {
+  flex: 1;
+  margin-right: 5px;
+}

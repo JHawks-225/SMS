@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Panel Admin Chat</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+
+  <h1>Panel Admin 👑</h1>
+
+  <!-- Section demandes -->
+  <div class="form-container">
+    <h2>Demandes en attente</h2>
+    <div id="list">
+      <!-- Les demandes apparaissent ici -->
+    </div>
+
+    <button onclick="download()">Télécharger l'historique</button>
+  </div>
+
+</div>
+
+<script>
+function refresh() {
+  fetch("/admin/demandes")
+    .then(r => r.json())
+    .then(data => {
+      const list = document.getElementById("list");
+      list.innerHTML = "";
+      data.forEach(u => {
+        const vis = u.visibleNom ? "Oui" : "Non";
+        list.innerHTML += `
+        <div class="demande">
+          <p><strong>${u.pseudo}</strong> (${u.nom || "—"}) - Visible publiquement: ${vis}
+          <button onclick="valider('${u.pseudo}')">Valider</button></p>
+        </div>`;
+      });
+    });
+}
+
+function valider(pseudo) {
+  fetch("/admin/valider", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({pseudo})
+  }).then(refresh);
+}
+
+function download() {
+  window.location = "/download";
+}
+
+// Rafraîchissement automatique toutes les 2 secondes
+setInterval(refresh, 2000);
+refresh();
+</script>
+
+</body>
+</html>
