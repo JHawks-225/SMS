@@ -9,21 +9,62 @@
 
 <div class="container">
 
-  <h1>Panel Admin 👑</h1>
+  <!-- LOGIN ADMIN -->
+  <div id="login">
+    <h1>🔐 Accès Administrateur</h1>
+    <input type="password" id="code" placeholder="Code admin">
+    <button onclick="login()">Entrer</button>
+    <p id="error"></p>
+  </div>
 
-  <!-- Section demandes -->
-  <div class="form-container">
-    <h2>Demandes en attente</h2>
-    <div id="list">
-      <!-- Les demandes apparaissent ici -->
+  <!-- PANEL ADMIN -->
+  <div id="panel" style="display:none;">
+
+    <h1>Panel Admin 👑</h1>
+
+    <button onclick="logout()">Déconnexion</button>
+
+    <div class="form-container">
+      <h2>Demandes en attente</h2>
+      <div id="list"></div>
+
+      <button onclick="download()">Télécharger l'historique</button>
     </div>
 
-    <button onclick="download()">Télécharger l'historique</button>
   </div>
 
 </div>
 
 <script>
+/* ==== AUTH ADMIN ==== */
+const ADMIN_CODE = "102009";
+
+if (localStorage.getItem("admin") === "true") {
+  showPanel();
+}
+
+function login() {
+  const code = document.getElementById("code").value;
+  if (code === ADMIN_CODE) {
+    localStorage.setItem("admin", "true");
+    showPanel();
+  } else {
+    document.getElementById("error").textContent = "❌ Code incorrect";
+  }
+}
+
+function logout() {
+  localStorage.removeItem("admin");
+  location.reload();
+}
+
+function showPanel() {
+  document.getElementById("login").style.display = "none";
+  document.getElementById("panel").style.display = "block";
+  refresh();
+}
+
+/* ==== LOGIQUE ADMIN EXISTANTE ==== */
 function refresh() {
   fetch("/admin/demandes")
     .then(r => r.json())
@@ -34,8 +75,11 @@ function refresh() {
         const vis = u.visibleNom ? "Oui" : "Non";
         list.innerHTML += `
         <div class="demande">
-          <p><strong>${u.pseudo}</strong> (${u.nom || "—"}) - Visible publiquement: ${vis}
-          <button onclick="valider('${u.pseudo}')">Valider</button></p>
+          <p>
+            <strong>${u.pseudo}</strong>
+            (${u.nom || "—"}) - Visible publiquement: ${vis}
+            <button onclick="valider('${u.pseudo}')">Valider</button>
+          </p>
         </div>`;
       });
     });
@@ -53,9 +97,10 @@ function download() {
   window.location = "/download";
 }
 
-// Rafraîchissement automatique toutes les 2 secondes
-setInterval(refresh, 2000);
-refresh();
+// auto refresh toutes les 2s
+setInterval(() => {
+  if (localStorage.getItem("admin") === "true") refresh();
+}, 2000);
 </script>
 
 </body>
