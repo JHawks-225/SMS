@@ -7,89 +7,140 @@
 </head>
 <body>
 
-<div class="app">
+<!-- ===== INSCRIPTION ===== -->
+<div class="container" id="register">
+  <h1>📝 Inscription</h1>
 
-  <!-- SIDEBAR -->
+  <input type="text" id="nom" placeholder="Nom réel">
+  <input type="text" id="pseudo" placeholder="Pseudo">
+  <input type="text" id="numero" placeholder="Numéro">
+
+  <label>
+    <input type="checkbox" id="visibleNom">
+    Afficher mon vrai nom publiquement
+  </label>
+
+  <button onclick="inscription()">Envoyer la demande</button>
+</div>
+
+<!-- ===== EN ATTENTE ===== -->
+<div class="container" id="waiting" style="display:none;">
+  <h1>⏳ Demande envoyée</h1>
+  <p>En attente de validation par l'administrateur…</p>
+</div>
+
+<!-- ===== CHAT ===== -->
+<div class="app" id="chat" style="display:none;">
+
   <aside class="sidebar">
     <h2>💬 Chat</h2>
-
     <button onclick="openGeneral()"># Général</button>
     <button onclick="openPrivate()">👤 Privé</button>
-    <button onclick="openGroup()">👥 Nouveau groupe</button>
+    <button onclick="openGroup()">👥 Groupe</button>
 
     <hr>
-
     <h3>Utilisateurs</h3>
-    <ul id="users">
-      <!-- injecté dynamiquement -->
-    </ul>
+    <ul id="users"></ul>
   </aside>
 
-  <!-- CHAT -->
   <main class="chat">
-
     <header class="chat-header">
       <h2 id="chat-title">Discussion générale</h2>
     </header>
 
-    <div class="messages" id="messages">
-      <!-- messages -->
-    </div>
+    <div class="messages" id="messages"></div>
 
     <div class="input-zone">
-      <input type="text" id="messageInput" placeholder="Écris ton message...">
+      <input type="text" id="messageInput" placeholder="Message…">
       <button onclick="sendMessage()">Envoyer</button>
     </div>
-
   </main>
 
 </div>
 
 <script>
-let currentChat = "general";
+/* ===== ETAT UTILISATEUR ===== */
+const status = localStorage.getItem("status");
 
+if (status === "waiting") showWaiting();
+if (status === "accepted") showChat();
+
+/* ===== INSCRIPTION ===== */
+function inscription() {
+  const user = {
+    nom: nom.value,
+    pseudo: pseudo.value,
+    numero: numero.value,
+    visibleNom: visibleNom.checked
+  };
+
+  fetch("/register", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(user)
+  });
+
+  localStorage.setItem("status", "waiting");
+  showWaiting();
+}
+
+function showWaiting() {
+  register.style.display = "none";
+  waiting.style.display = "block";
+}
+
+/* ===== CHAT ===== */
+function showChat() {
+  register.style.display = "none";
+  waiting.style.display = "none";
+  chat.style.display = "flex";
+}
+
+/* Simulation validation admin (temporaire) */
+setInterval(() => {
+  fetch("/status")
+    .then(r => r.json())
+    .then(r => {
+      if (r.accepted) {
+        localStorage.setItem("status", "accepted");
+        showChat();
+      }
+    });
+}, 3000);
+
+/* ===== CHAT UI ===== */
 function openGeneral() {
-  currentChat = "general";
-  document.getElementById("chat-title").textContent = "Discussion générale";
-  clearMessages();
+  chatTitle("Discussion générale");
 }
 
 function openPrivate() {
-  document.getElementById("chat-title").textContent = "Discussions privées";
-  clearMessages();
+  chatTitle("Discussions privées");
 }
 
 function openGroup() {
-  const name = prompt("Nom du groupe ?");
-  if (name) {
-    alert("Groupe '" + name + "' créé (logique serveur à venir)");
-  }
+  const g = prompt("Nom du groupe ?");
+  if (g) alert("Groupe '" + g + "' créé");
+}
+
+function chatTitle(t) {
+  document.getElementById("chat-title").textContent = t;
+  messages.innerHTML = "";
 }
 
 function sendMessage() {
-  const input = document.getElementById("messageInput");
-  if (!input.value) return;
-
-  const msg = document.createElement("div");
-  msg.className = "message me";
-  msg.textContent = input.value;
-  document.getElementById("messages").appendChild(msg);
-
-  input.value = "";
+  if (!messageInput.value) return;
+  const d = document.createElement("div");
+  d.className = "message me";
+  d.textContent = messageInput.value;
+  messages.appendChild(d);
+  messageInput.value = "";
 }
 
-function clearMessages() {
-  document.getElementById("messages").innerHTML = "";
-}
-
-// FAUX utilisateurs pour test visuel
-const fakeUsers = ["Alex", "Sarah", "Koffi", "Mariam"];
-const ul = document.getElementById("users");
-fakeUsers.forEach(u => {
-  const li = document.createElement("li");
-  li.textContent = u;
-  li.onclick = () => alert("Discussion privée avec " + u);
-  ul.appendChild(li);
+/* Faux users visuels */
+["Alex","Sarah","Koffi"].forEach(u=>{
+  const li=document.createElement("li");
+  li.textContent=u;
+  users.appendChild(li);
 });
 </script>
 
