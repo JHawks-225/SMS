@@ -1,135 +1,62 @@
-const socket = io();
-let currentUser = {};
-let currentPrivateTo = "";
-let validated = false;
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Panel Admin Chat</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
 
-// Gestion des onglets
-function openTab(tabName){
-  document.querySelectorAll(".tabcontent").forEach(t => t.style.display = "none");
-  const target = document.getElementById(tabName);
-  if (target) target.style.display = "block";
-}
+<div class="container">
 
-// Inscription
-function register(){
-  const pseudoInput = document.getElementById("pseudo");
-  const nomInput = document.getElementById("nom");
-  const visibleCheck = document.getElementById("visibleNom");
-  
-  const pseudoVal = pseudoInput.value.trim();
-  if(!pseudoVal) return alert("Pseudo requis");
+  <h1>Panel Admin 👑</h1>
 
-  fetch("/register", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      pseudo: pseudoVal, 
-      nom: nomInput.value.trim(), 
-      visibleNom: visibleCheck.checked
-    })
-  }).then(r => r.text()).then(alert);
-}
+  <!-- Section demandes -->
+  <div class="form-container">
+    <h2>Demandes en attente</h2>
+    <div id="list">
+      <!-- Les demandes apparaissent ici -->
+    </div>
 
-// Vérification automatique de la validation
-setInterval(() => {
-  const pseudoInput = document.getElementById("pseudo");
-  const pseudoVal = pseudoInput.value.trim();
-  if(!pseudoVal || validated) return;
+    <button onclick="download()">Télécharger l'historique</button>
+  </div>
 
-  fetch("/check/" + pseudoVal)
-    .then(r => r.json())
-    .then(d => {
-      if(d.ok && !validated){
-        validated = true;
-        document.getElementById("formContainer").style.display = "none";
-        openTab('general');
-        
-        // On récupère les infos complètes (y compris la couleur) auprès du serveur
-        fetch("/users")
-          .then(r => r.json())
-          .then(users => {
-            const me = users.find(u => u.pseudo === pseudoVal);
-            currentUser = me || { pseudo: pseudoVal };
-            displayProfile();
-            socket.emit("registerSocket", currentUser.pseudo);
-            loadUserList();
-          });
-      }
-    });
-}, 2000);
+</div>
 
-// Envoi message général
-function sendGeneral(){
-  const msgInput = document.getElementById("msgGeneral");
-  const text = msgInput.value.trim();
-  if(!text) return;
-  
-  socket.emit("message", {
-    type: "general", 
-    text, 
-    pseudo: currentUser.pseudo, 
-    nom: currentUser.nom, 
-    visibleNom: currentUser.visibleNom, 
-    couleur: currentUser.couleur, // Transmission de la couleur
-    time: new Date().toLocaleTimeString()
-  });
-  msgInput.value = "";
-}
-
-// Réception des messages (CORRIGÉ)
-socket.on("message", (data) => {
-  const li = document.createElement("li");
-  const displayName = data.visibleNom ? `${data.pseudo} (${data.nom})` : data.pseudo;
-  
-  // Création du contenu avec couleur
-  li.innerHTML = `<small>${data.time}</small> <strong style="color:${data.couleur || '#4a90e2'}">${displayName}</strong>: ${data.text}`;
-
-  if (data.type === "general") {
-    document.getElementById("chatGeneral").appendChild(li);
-  } else if (data.type === "private") {
-    // On affiche si on est l'expéditeur ou le destinataire ciblé
-    if (data.from === currentPrivateTo || data.to === currentPrivateTo || data.from === currentUser.pseudo) {
-      const liPrivate = li.cloneNode(true);
-      document.getElementById("chatPrivate").appendChild(liPrivate);
-    }
-  }
-  
-  // Scroll automatique
-  const chatBox = li.parentElement;
-  if(chatBox) chatBox.scrollTop = chatBox.scrollHeight;
-});
-
-// Liste des utilisateurs
-function loadUserList(){
-  fetch("/users")
+<script>
+function refresh() {
+  fetch("/admin/demandes")
     .then(r => r.json())
     .then(data => {
-      const userList = document.getElementById("userList");
-      userList.innerHTML = "";
+      const list = document.getElementById("list");
+      list.innerHTML = "";
       data.forEach(u => {
-        if(u.pseudo !== currentUser.pseudo){
-          const li = document.createElement("li");
-          li.textContent = u.pseudo;
-          li.style.color = u.couleur || "#4a90e2";
-          li.onclick = () => {
-            currentPrivateTo = u.pseudo;
-            document.getElementById("privateChatContainer").style.display = "block";
-            document.getElementById("chatPrivate").innerHTML = ""; // Optionnel: clear l'ancien chat privé
-          };
-          userList.appendChild(li);
-        }
+        const vis = u.visibleNom ? "Oui" : "Non";
+        list.innerHTML += `
+        <div class="demande">
+          <p><strong>${u.pseudo}</strong> (${u.nom || "—"}) - Visible publiquement: ${vis}
+          <button onclick="valider('${u.pseudo}')">Valider</button></p>
+        </div>`;
       });
     });
 }
 
-socket.on("onlineUsers", data => {
-  document.querySelectorAll("#userList li").forEach(li => {
-    li.style.fontWeight = data.includes(li.textContent) ? "bold" : "normal";
-  });
-});
-
-function displayProfile(){
-  document.getElementById("displayPseudo").textContent = currentUser.pseudo;
-  document.getElementById("displayNom").textContent = currentUser.nom || "N/A";
-  document.getElementById("displayColor").textContent = currentUser.couleur || "en attente";
+function valider(pseudo) {
+  fetch("/admin/valider", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({pseudo})
+  }).then(refresh);
 }
+
+function download() {
+  window.location = "/download";
+}
+
+// Rafraîchissement automatique toutes les 2 secondes
+setInterval(refresh, 2000);
+refresh();
+</script>
+
+</body>
+</html>
