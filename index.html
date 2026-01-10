@@ -2,185 +2,95 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Chat de classe complet</title>
+<title>Chat de Classe</title>
 <link rel="stylesheet" href="style.css">
-<script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
 
-<div class="container">
+<div class="app">
 
-  <h1>Chat de classe 🎉</h1>
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <h2>💬 Chat</h2>
 
-  <!-- Onglets -->
-  <div class="tabs">
-    <button class="tablink" onclick="openTab('general')">Général</button>
-    <button class="tablink" onclick="openTab('private')">Privé</button>
-    <button class="tablink" onclick="openTab('group')">Groupes</button>
-    <button class="tablink" onclick="openTab('profile')">Profil</button>
-  </div>
+    <button onclick="openGeneral()"># Général</button>
+    <button onclick="openPrivate()">👤 Privé</button>
+    <button onclick="openGroup()">👥 Nouveau groupe</button>
 
-  <!-- Formulaire -->
-  <div id="formContainer" class="form-container">
-    <h2>Inscription</h2>
-    <input id="pseudo" placeholder="Ton pseudo">
-    <input id="nom" placeholder="Ton vrai nom / numéro (facultatif)">
-    <label><input type="checkbox" id="visibleNom"> Afficher publiquement mon vrai nom / numéro</label>
-    <button onclick="register()">Envoyer la demande</button>
-  </div>
+    <hr>
 
-  <!-- Chat Général -->
-  <div id="general" class="tabcontent">
-    <ul id="chatGeneral" class="chat"></ul>
-    <div class="message-input">
-      <input id="msgGeneral" placeholder="Écris un message">
-      <button onclick="sendGeneral()">Envoyer</button>
+    <h3>Utilisateurs</h3>
+    <ul id="users">
+      <!-- injecté dynamiquement -->
+    </ul>
+  </aside>
+
+  <!-- CHAT -->
+  <main class="chat">
+
+    <header class="chat-header">
+      <h2 id="chat-title">Discussion générale</h2>
+    </header>
+
+    <div class="messages" id="messages">
+      <!-- messages -->
     </div>
-  </div>
 
-  <!-- Chat Privé -->
-  <div id="private" class="tabcontent">
-    <h3>Utilisateurs disponibles</h3>
-    <ul id="userList"></ul>
-    <div id="privateChatContainer" style="display:none">
-      <ul id="chatPrivate" class="chat"></ul>
-      <div class="message-input">
-        <input id="msgPrivate" placeholder="Écris un message privé">
-        <button onclick="sendPrivate()">Envoyer</button>
-      </div>
+    <div class="input-zone">
+      <input type="text" id="messageInput" placeholder="Écris ton message...">
+      <button onclick="sendMessage()">Envoyer</button>
     </div>
-  </div>
 
-  <!-- Chat Groupes -->
-  <div id="group" class="tabcontent">
-    <h3>Groupes</h3>
-    <div id="groupList"></div>
-    <div id="groupChatContainer" style="display:none">
-      <ul id="chatGroup" class="chat"></ul>
-      <div class="message-input">
-        <input id="msgGroup" placeholder="Écris dans le groupe">
-        <button onclick="sendGroup()">Envoyer</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Profil -->
-  <div id="profile" class="tabcontent">
-    <h3>Profil</h3>
-    <p>Pseudo : <span id="displayPseudo"></span></p>
-    <p>Nom visible : <span id="displayNom"></span></p>
-    <p>Couleur pseudo : <span id="displayColor"></span></p>
-  </div>
+  </main>
 
 </div>
 
 <script>
-const socket = io();
-let currentUser = {};
-let currentPrivateTo = "";
-let validated = false;
+let currentChat = "general";
 
-// Onglets
-function openTab(tabName){
-  document.querySelectorAll(".tabcontent").forEach(t=>t.style.display="none");
-  document.getElementById(tabName).style.display="block";
+function openGeneral() {
+  currentChat = "general";
+  document.getElementById("chat-title").textContent = "Discussion générale";
+  clearMessages();
 }
 
-// Formulaire
-function register(){
-  const pseudoVal = pseudo.value.trim();
-  const nomVal = nom.value.trim();
-  const visibleNomVal = visibleNom.checked;
-  if(!pseudoVal) return alert("Pseudo requis");
-
-  fetch("/register",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({pseudo:pseudoVal, nom:nomVal, visibleNom:visibleNomVal})
-  }).then(r=>r.text()).then(alert);
+function openPrivate() {
+  document.getElementById("chat-title").textContent = "Discussions privées";
+  clearMessages();
 }
 
-// Vérifier validation et initialiser chat
-setInterval(()=>{
-  const pseudoVal = pseudo.value.trim();
-  if(!pseudoVal) return;
-  fetch("/check/"+pseudoVal)
-    .then(r=>r.json())
-    .then(d=>{
-      if(d.ok && !validated){
-        validated = true;
-        formContainer.style.display="none";
-        openTab('general');
-        currentUser = {pseudo:pseudoVal, nom:nom.value.trim(), visibleNom:visibleNom.checked};
-        displayProfile();
-        socket.emit("registerSocket", currentUser.pseudo);
-        loadUserList();
-      }
-    });
-},2000);
-
-// Chat général
-function sendGeneral(){
-  const text = msgGeneral.value.trim();
-  if(!text) return;
-  socket.emit("message", {type:"general", text, pseudo:currentUser.pseudo, nom:currentUser.nom, visibleNom:currentUser.visibleNom, time:new Date().toLocaleTimeString()});
-  msgGeneral.value="";
+function openGroup() {
+  const name = prompt("Nom du groupe ?");
+  if (name) {
+    alert("Groupe '" + name + "' créé (logique serveur à venir)");
+  }
 }
 
-// Chat privé
-function openPrivate(to){
-  currentPrivateTo = to;
-  privateChatContainer.style.display = "block";
+function sendMessage() {
+  const input = document.getElementById("messageInput");
+  if (!input.value) return;
+
+  const msg = document.createElement("div");
+  msg.className = "message me";
+  msg.textContent = input.value;
+  document.getElementById("messages").appendChild(msg);
+
+  input.value = "";
 }
 
-function sendPrivate(){
-  const text = msgPrivate.value.trim();
-  if(!text) return;
-  socket.emit("message",{type:"private", from:currentUser.pseudo, to:currentPrivateTo, text, nom:currentUser.nom, visibleNom:currentUser.visibleNom, time:new Date().toLocaleTimeString()});
-  msgPrivate.value="";
+function clearMessages() {
+  document.getElementById("messages").innerHTML = "";
 }
 
-// Liste utilisateurs validés
-function loadUserList(){
-  fetch("/users")
-    .then(r=>r.json())
-    .then(data=>{
-      userList.innerHTML="";
-      data.forEach(u=>{
-        if(u.pseudo !== currentUser.pseudo){
-          const li = document.createElement("li");
-          li.textContent = u.pseudo;
-          li.style.color = u.couleur || "#000";
-          li.style.cursor = "pointer";
-          li.onclick = ()=>openPrivate(u.pseudo);
-          userList.appendChild(li);
-        }
-      });
-    });
-}
-
-// Socket.io réception messages
-socket.on("message",(data)=>{
-  let li = document.createElement("li");
-  let displayName = data.visibleNom ? `${data.pseudo} (${data.nom})` : data.pseudo;
-  li.textContent = `[${data.time}] ${displayName}: ${data.text}`;
-
-  if(data.type === "general") chatGeneral.appendChild(li);
-  if(data.type === "private" && (data.from===currentPrivateTo || data.to===currentPrivateTo)) chatPrivate.appendChild(li.cloneNode(true));
+// FAUX utilisateurs pour test visuel
+const fakeUsers = ["Alex", "Sarah", "Koffi", "Mariam"];
+const ul = document.getElementById("users");
+fakeUsers.forEach(u => {
+  const li = document.createElement("li");
+  li.textContent = u;
+  li.onclick = () => alert("Discussion privée avec " + u);
+  ul.appendChild(li);
 });
-
-socket.on("onlineUsers", data=>{
-  document.querySelectorAll("#userList li").forEach(li=>{
-    li.style.fontWeight = data.includes(li.textContent) ? "bold" : "normal";
-  });
-});
-
-// Profil
-function displayProfile(){
-  displayPseudo.textContent = currentUser.pseudo;
-  displayNom.textContent = currentUser.nom;
-  displayColor.textContent = currentUser.couleur||"aucune";
-}
 </script>
 
 </body>
