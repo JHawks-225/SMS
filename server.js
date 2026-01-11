@@ -13,37 +13,27 @@ app.use(express.static("."));
 let demandes = [];
 let autorises = [];
 let messages = [];
-let onlineUsers = [];
+let onlineUsers = {}; // Objet pour stocker pseudo => socketId
 
-function randomColor() {
-  return "#" + Math.floor(Math.random() * 16777215).toString(16);
-}
-
-// Inscription
 app.post("/register", (req, res) => {
   const { pseudo, nom, numero, visibleNom } = req.body;
-  if (!pseudo) return res.status(400).json({ error: "Pseudo requis" });
-  
-  const user = { pseudo, nom, numero, visibleNom };
-  demandes.push(user);
+  if (!pseudo || !numero) return res.status(400).json({ error: "Requis" });
+  demandes.push({ pseudo, nom, numero, visibleNom });
   res.json({ ok: true });
 });
 
-// Vérification du statut (Correction ici)
 app.get("/status", (req, res) => {
   const pseudo = req.query.pseudo;
   const ok = autorises.find(u => u.pseudo === pseudo);
   res.json({ accepted: !!ok });
 });
 
-// Admin
+// Admin Panel Functions
 app.get("/admin/demandes", (req, res) => res.json(demandes));
-
 app.post("/admin/valider", (req, res) => {
   const { pseudo } = req.body;
   const user = demandes.find(u => u.pseudo === pseudo);
   if (user) {
-    user.couleur = randomColor();
     autorises.push(user);
     demandes = demandes.filter(u => u.pseudo !== pseudo);
   }
@@ -55,24 +45,28 @@ app.get("/download", (req, res) => {
   res.download("chat_history.json");
 });
 
-// Socket.io pour le temps réel
-io.on("connection", socket => {
-  socket.on("registerSocket", pseudo => {
+io.on("connection", (socket) => {
+  socket.on("registerSocket", (pseudo) => {
     socket.pseudo = pseudo;
-    if (!onlineUsers.includes(pseudo)) onlineUsers.push(pseudo);
-    io.emit("onlineUsers", onlineUsers);
+    onlineUsers[pseudo] = socket.id;
+    io.emit("onlineUsers", Object.keys(onlineUsers));
   });
 
-  socket.on("message", data => {
+  socket.on("message", (data) => {
     messages.push(data);
-    io.emit("message", data); // Diffusion à tous
+    if (data.type === "general") {
+      io.emit("message", data);
+    } else if (data.type === "private") {
+      const targetId = onlineUsers[data.to];
+      if (targetId) io.to(targetId).emit("message", data);
+      socket.emit("message", data); // Retour à l'envoyeur
+    }
   });
 
   socket.on("disconnect", () => {
-    onlineUsers = onlineUsers.filter(p => p !== socket.pseudo);
-    io.emit("onlineUsers", onlineUsers);
+    if (socket.pseudo) delete onlineUsers[socket.pseudo];
+    io.emit("onlineUsers", Object.keys(onlineUsers));
   });
 });
 
-const PORT = 3000;
-server.listen(PORT, () => console.log(`🚀 Serveur sur http://localhost:${PORT}`));
+server.listen(3000, () => console.log("🚀 Port 3000"));
