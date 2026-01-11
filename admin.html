@@ -1,87 +1,52 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<title>Panel Admin Chat</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <title>Panel Admin</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
 <div class="container">
-
-  <!-- LOGIN ADMIN -->
   <div id="login">
-    <h1>🔐 Accès Administrateur</h1>
-    <input type="password" id="code" placeholder="Code admin">
+    <h1>🔐 Admin</h1>
+    <input type="password" id="code" placeholder="Code (102009)">
     <button onclick="login()">Entrer</button>
-    <p id="error"></p>
   </div>
 
-  <!-- PANEL ADMIN -->
   <div id="panel" style="display:none;">
-
     <h1>Panel Admin 👑</h1>
-
-    <button onclick="logout()">Déconnexion</button>
-
     <div class="form-container">
       <h2>Demandes en attente</h2>
       <div id="list"></div>
-
       <button onclick="download()">Télécharger l'historique</button>
+      <button onclick="location.reload()">Déconnexion</button>
     </div>
-
   </div>
-
 </div>
 
 <script>
-/* ==== AUTH ADMIN ==== */
 const ADMIN_CODE = "102009";
 
-if (localStorage.getItem("admin") === "true") {
-  showPanel();
-}
-
 function login() {
-  const code = document.getElementById("code").value;
-  if (code === ADMIN_CODE) {
-    localStorage.setItem("admin", "true");
-    showPanel();
-  } else {
-    document.getElementById("error").textContent = "❌ Code incorrect";
+  if (document.getElementById("code").value === ADMIN_CODE) {
+    document.getElementById("login").style.display = "none";
+    document.getElementById("panel").style.display = "block";
+    refresh();
+    setInterval(refresh, 3000);
   }
 }
 
-function logout() {
-  localStorage.removeItem("admin");
-  location.reload();
-}
-
-function showPanel() {
-  document.getElementById("login").style.display = "none";
-  document.getElementById("panel").style.display = "block";
-  refresh();
-}
-
-/* ==== LOGIQUE ADMIN EXISTANTE ==== */
 function refresh() {
   fetch("/admin/demandes")
     .then(r => r.json())
     .then(data => {
       const list = document.getElementById("list");
-      list.innerHTML = "";
-      data.forEach(u => {
-        const vis = u.visibleNom ? "Oui" : "Non";
-        list.innerHTML += `
-        <div class="demande">
-          <p>
-            <strong>${u.pseudo}</strong>
-            (${u.nom || "—"}) - Visible publiquement: ${vis}
-            <button onclick="valider('${u.pseudo}')">Valider</button>
-          </p>
-        </div>`;
-      });
+      list.innerHTML = data.map(u => `
+        <div style="background:#1e293b; padding:10px; margin:5px; border-radius:8px;">
+          <strong>${u.pseudo}</strong> (${u.nom || 'Sans nom'}) 
+          <button onclick="valider('${u.pseudo}')">Valider</button>
+        </div>
+      `).join("");
     });
 }
 
@@ -93,15 +58,7 @@ function valider(pseudo) {
   }).then(refresh);
 }
 
-function download() {
-  window.location = "/download";
-}
-
-// auto refresh toutes les 2s
-setInterval(() => {
-  if (localStorage.getItem("admin") === "true") refresh();
-}, 2000);
+function download() { window.location = "/download"; }
 </script>
-
 </body>
 </html>
