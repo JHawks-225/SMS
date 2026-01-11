@@ -10,14 +10,26 @@ const io = new Server(server);
 app.use(express.json());
 app.use(express.static("."));
 
+/* ===== DONNÉES ===== */
 let demandes = [];
 let autorises = [];
 let messages = [];
-let onlineUsers = {}; // Objet pour stocker pseudo => socketId
+let onlineUsers = {}; // pseudo => socketId
 
+function randomColor() {
+  return "#" + Math.floor(Math.random() * 16777215).toString(16);
+}
+
+/* ===== ROUTES ===== */
 app.post("/register", (req, res) => {
   const { pseudo, nom, numero, visibleNom } = req.body;
-  if (!pseudo || !numero) return res.status(400).json({ error: "Requis" });
+  if (!pseudo || !numero) return res.status(400).json({ error: "Champs requis" });
+  
+  // Éviter les doublons
+  if (demandes.find(u => u.pseudo === pseudo) || autorises.find(u => u.pseudo === pseudo)) {
+    return res.status(400).json({ error: "Déjà existant" });
+  }
+
   demandes.push({ pseudo, nom, numero, visibleNom });
   res.json({ ok: true });
 });
@@ -28,14 +40,16 @@ app.get("/status", (req, res) => {
   res.json({ accepted: !!ok });
 });
 
-// Admin Panel Functions
+/* ===== ADMIN ===== */
 app.get("/admin/demandes", (req, res) => res.json(demandes));
+
 app.post("/admin/valider", (req, res) => {
   const { pseudo } = req.body;
-  const user = demandes.find(u => u.pseudo === pseudo);
-  if (user) {
+  const index = demandes.findIndex(u => u.pseudo === pseudo);
+  if (index !== -1) {
+    const user = demandes.splice(index, 1)[0];
+    user.couleur = randomColor();
     autorises.push(user);
-    demandes = demandes.filter(u => u.pseudo !== pseudo);
   }
   res.json({ ok: true });
 });
@@ -45,6 +59,7 @@ app.get("/download", (req, res) => {
   res.download("chat_history.json");
 });
 
+/* ===== REAL-TIME ===== */
 io.on("connection", (socket) => {
   socket.on("registerSocket", (pseudo) => {
     socket.pseudo = pseudo;
@@ -59,7 +74,7 @@ io.on("connection", (socket) => {
     } else if (data.type === "private") {
       const targetId = onlineUsers[data.to];
       if (targetId) io.to(targetId).emit("message", data);
-      socket.emit("message", data); // Retour à l'envoyeur
+      socket.emit("message", data); 
     }
   });
 
@@ -69,4 +84,4 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(3000, () => console.log("🚀 Port 3000"));
+server.listen(3000, () => console.log("🚀 Serveur lancé sur http://localhost:3000"));
