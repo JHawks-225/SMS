@@ -1,148 +1,113 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<title>Chat de Classe</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <title>Chat de Classe</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
 
-<!-- ===== INSCRIPTION ===== -->
 <div class="container" id="register">
   <h1>📝 Inscription</h1>
-
   <input type="text" id="nom" placeholder="Nom réel">
   <input type="text" id="pseudo" placeholder="Pseudo">
   <input type="text" id="numero" placeholder="Numéro">
-
-  <label>
-    <input type="checkbox" id="visibleNom">
-    Afficher mon vrai nom publiquement
-  </label>
-
+  <label><input type="checkbox" id="visibleNom"> Afficher mon nom</label>
   <button onclick="inscription()">Envoyer la demande</button>
 </div>
 
-<!-- ===== EN ATTENTE ===== -->
 <div class="container" id="waiting" style="display:none;">
-  <h1>⏳ Demande envoyée</h1>
-  <p>En attente de validation par l'administrateur…</p>
+  <h1>⏳ En attente</h1>
+  <p>L'administrateur doit valider votre compte...</p>
 </div>
 
-<!-- ===== CHAT ===== -->
 <div class="app" id="chat" style="display:none;">
-
   <aside class="sidebar">
     <h2>💬 Chat</h2>
-    <button onclick="openGeneral()"># Général</button>
-    <button onclick="openPrivate()">👤 Privé</button>
-    <button onclick="openGroup()">👥 Groupe</button>
-
-    <hr>
-    <h3>Utilisateurs</h3>
     <ul id="users"></ul>
   </aside>
-
   <main class="chat">
-    <header class="chat-header">
-      <h2 id="chat-title">Discussion générale</h2>
-    </header>
-
+    <header class="chat-header"><h2 id="chat-title">Général</h2></header>
     <div class="messages" id="messages"></div>
-
     <div class="input-zone">
-      <input type="text" id="messageInput" placeholder="Message…">
+      <input type="text" id="messageInput" placeholder="Message...">
       <button onclick="sendMessage()">Envoyer</button>
     </div>
   </main>
-
 </div>
 
 <script>
-/* ===== ETAT UTILISATEUR ===== */
-const status = localStorage.getItem("status");
+const socket = io();
+let monPseudo = localStorage.getItem("monPseudo");
 
-if (status === "waiting") showWaiting();
-if (status === "accepted") showChat();
+if (localStorage.getItem("status") === "accepted") showChat();
 
-/* ===== INSCRIPTION ===== */
 function inscription() {
-  const user = {
-    nom: nom.value,
-    pseudo: pseudo.value,
-    numero: numero.value,
-    visibleNom: visibleNom.checked
+  const p = document.getElementById("pseudo").value;
+  const data = {
+    nom: document.getElementById("nom").value,
+    pseudo: p,
+    numero: document.getElementById("numero").value,
+    visibleNom: document.getElementById("visibleNom").checked
   };
 
   fetch("/register", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
-    body: JSON.stringify(user)
+    body: JSON.stringify(data)
+  }).then(() => {
+    monPseudo = p;
+    localStorage.setItem("monPseudo", p);
+    localStorage.setItem("status", "waiting");
+    showWaiting();
   });
-
-  localStorage.setItem("status", "waiting");
-  showWaiting();
 }
 
 function showWaiting() {
-  register.style.display = "none";
-  waiting.style.display = "block";
+  document.getElementById("register").style.display = "none";
+  document.getElementById("waiting").style.display = "block";
 }
 
-/* ===== CHAT ===== */
 function showChat() {
-  register.style.display = "none";
-  waiting.style.display = "none";
-  chat.style.display = "flex";
+  document.getElementById("register").style.display = "none";
+  document.getElementById("waiting").style.display = "none";
+  document.getElementById("chat").style.display = "flex";
+  socket.emit("registerSocket", monPseudo);
 }
 
-/* Simulation validation admin (temporaire) */
+// Vérification auto du statut
 setInterval(() => {
-  fetch("/status")
-    .then(r => r.json())
-    .then(r => {
-      if (r.accepted) {
-        localStorage.setItem("status", "accepted");
-        showChat();
-      }
-    });
+  if (localStorage.getItem("status") === "waiting") {
+    fetch(`/status?pseudo=${monPseudo}`)
+      .then(r => r.json())
+      .then(res => {
+        if (res.accepted) {
+          localStorage.setItem("status", "accepted");
+          showChat();
+        }
+      });
+  }
 }, 3000);
 
-/* ===== CHAT UI ===== */
-function openGeneral() {
-  chatTitle("Discussion générale");
-}
-
-function openPrivate() {
-  chatTitle("Discussions privées");
-}
-
-function openGroup() {
-  const g = prompt("Nom du groupe ?");
-  if (g) alert("Groupe '" + g + "' créé");
-}
-
-function chatTitle(t) {
-  document.getElementById("chat-title").textContent = t;
-  messages.innerHTML = "";
-}
-
 function sendMessage() {
-  if (!messageInput.value) return;
-  const d = document.createElement("div");
-  d.className = "message me";
-  d.textContent = messageInput.value;
-  messages.appendChild(d);
-  messageInput.value = "";
+  const input = document.getElementById("messageInput");
+  if (!input.value) return;
+  socket.emit("message", { from: monPseudo, text: input.value });
+  input.value = "";
 }
 
-/* Faux users visuels */
-["Alex","Sarah","Koffi"].forEach(u=>{
-  const li=document.createElement("li");
-  li.textContent=u;
-  users.appendChild(li);
+socket.on("message", data => {
+  const div = document.createElement("div");
+  div.className = data.from === monPseudo ? "message me" : "message";
+  div.innerHTML = `<strong>${data.from}:</strong> ${data.text}`;
+  document.getElementById("messages").appendChild(div);
+});
+
+socket.on("onlineUsers", list => {
+  const ui = document.getElementById("users");
+  ui.innerHTML = list.map(u => `<li>🟢 ${u}</li>`).join("");
 });
 </script>
-
 </body>
 </html>
