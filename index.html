@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulaire d'Information</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .form-container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        h2 {
+            margin-bottom: 20px;
+            color: #333;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-weight: bold;
+        }
+        input[type="text"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007BFF;
+            border: none;
+            color: white;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+<div class="form-container">
+    <h2>Vos Informations</h2>
+    
+    <!-- Formulaire natif Netlify sécurisé -->
+    <form name="questions-etudes" method="POST" data-netlify="true">
+        
+        <div class="form-group">
+            <label id="label-nom" for="nom">Nom</label>
+            <input type="text" id="nom" name="nom" required aria-labelledby="label-nom">
+        </div>
+
+        <div class="form-group">
+            <label id="label-prenom" for="prenom">Prénom</label>
+            <input type="text" id="prenom" name="prenom" required aria-labelledby="label-prenom">
+        </div>
+
+        <div class="form-group">
+            <label id="label-etudes" for="niveau_etudes">Niveau d'études</label>
+            <select id="niveau_etudes" name="niveau_etudes" required aria-labelledby="label-etudes">
+                <option value="" disabled selected>Choisissez votre niveau</option>
+                <option value="Secondaire">Secondaire</option>
+                <option value="Baccalauréat">Baccalauréat</option>
+                <option value="Licence / Bac+3">Licence / Bac+3</option>
+                <option value="Master / Bac+5">Master / Bac+5</option>
+                <option value="Doctorat">Doctorat</option>
+                <option value="Autre">Autre</option>
+            </select>
+        </div>
+
+        <button type="submit">Envoyer</button>
+    </form>
+</div>
+
+</body>
+</html>
